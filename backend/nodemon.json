@@ -1,0 +1,17 @@
+{
+  "watch": ["src"],
+  "ext": "ts",
+  "ignore": [
+    "generated-qr/**/*",
+    "uploads/**/*",
+    "data/**/*",
+    "assets/**/*",
+    "dist/**/*",
+    "node_modules/**/*",
+    "*.png",
+    "*.json",
+    "*.csv",
+    "*.xlsx"
+  ],
+  "exec": "ts-node src/server.ts"
+}

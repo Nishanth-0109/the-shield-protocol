@@ -1,0 +1,100 @@
+╔════════════════════════════════════════════════════════════════╗
+║     THE SHIELD PROTOCOL - QR & EMAIL AUTOMATION SYSTEM         ║
+║                      QUICK START GUIDE                         ║
+╚════════════════════════════════════════════════════════════════╝
+
+📋 STEP 1: Configure Email (REQUIRED for sending emails)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Open this file:  backend\.env
+
+For Gmail (easiest):
+  EMAIL_PROVIDER=gmail
+  GMAIL_USER=your.email@gmail.com
+  GMAIL_APP_PASSWORD=xxxx_xxxx_xxxx_xxxx
+
+To get Gmail App Password:
+  1. Go to: https://myaccount.google.com/security
+  2. Enable "2-Step Verification"
+  3. Search "App Passwords" → Create → Mail → Generate
+  4. Copy the 16-character password
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 STEP 2: Start the Application
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Double-click:  START-HERE.bat
+
+This will:
+  ✓ Install all dependencies automatically
+  ✓ Start backend server on http://localhost:5000
+  ✓ Start frontend server on http://localhost:5173
+  ✓ Open two terminal windows (keep both running)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌐 STEP 3: Access the Application
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Open your browser:  http://localhost:5173
+
+Login credentials:
+  Email:    admin@shieldprotocol.com
+  Password: ShieldAdmin@2026
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 STEP 4: Add Your Logo (Optional)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Place your Shield Protocol logo PNG at:
+  backend\assets\shield-logo.png
+
+If no logo is found, a placeholder will be auto-generated.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 STEP 5: Upload Students & Send Emails
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Workflow:
+  1. Login → Dashboard
+  2. Upload → Drag CSV/Excel file
+  3. Preview → Check valid records
+  4. Import → Confirm import
+  5. Processing → Generate QR codes
+  6. Processing → Send emails
+  7. Reports → Download CSV/Excel report
+
+CSV Format:
+  Student ID,Student Name,Email,Mobile,Dept/Branch
+  SP26-0001,Rahul Kumar,rahul@gmail.com,9876543210,CSE
+  SP26-0002,Priya Sharma,priya@gmail.com,9876543211,ECE
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛑 To Stop the Servers
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Press Ctrl+C in both terminal windows, then close them.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ Troubleshooting
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Problem: "npm not recognized"
+Solution: Restart your computer after installing Node.js
+
+Problem: Port 5000 already in use
+Solution: Edit backend\.env → Change PORT=5001
+         Edit frontend\.env → Change VITE_API_URL=http://localhost:5001/api
+
+Problem: Sharp install fails
+Solution: In backend folder run:
+         npm install --ignore-scripts
+         npm install sharp
+
+Problem: Email not sending
+Solution: Verify your GMAIL_APP_PASSWORD is correct (16 chars)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Need help? Check README.md and SETUP.md for detailed instructions.
+
+© 2026 The Shield Protocol — Internal Admin System
