@@ -36,6 +36,6 @@ export const authenticateToken = (
     next();
   } catch {
     const response: ApiResponse = { success: false, message: 'Invalid or expired token' };
-    res.status(403).json(response);
+    res.status(401).json(response);
   }
 };

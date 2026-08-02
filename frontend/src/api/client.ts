@@ -15,11 +15,11 @@ apiClient.interceptors.request.use(config => {
   return config;
 });
 
-// Auto-redirect on 401
+// Auto-redirect on 401 or 403
 apiClient.interceptors.response.use(
   res => res,
   err => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 || err.response?.status === 403) {
       localStorage.removeItem('sp_token');
       localStorage.removeItem('sp_admin');
       window.location.href = '/login';

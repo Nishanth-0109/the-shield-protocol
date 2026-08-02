@@ -128,7 +128,6 @@ function buildEmailHtml(student: Student, safeId: string, downloadUrl: string): 
   <!-- HEADER -->
   <div class="header">
     <div class="header-logo">⬡ The Shield Protocol</div>
-    <div class="header-subtitle">Cybersecurity Summit &amp; Hackathon 2026</div>
     <div class="badge">Welcome to Shield Protocol</div>
   </div>
 
@@ -138,7 +137,7 @@ function buildEmailHtml(student: Student, safeId: string, downloadUrl: string): 
     <div class="greeting">Dear ${student.name},</div>
     <div class="intro">
       Greetings from <strong style="color:#60a5fa;">The Shield Protocol Team</strong>.<br/><br/>
-      Welcome to <strong style="color:#60a5fa;">The Shield Protocol 2026 – Cybersecurity Summit &amp; Hackathon</strong>! We are thrilled to have you join us for this premier event.
+      We are happy to have you on Shield Protocol! Get ready to jump right in and learn easy ways to protect systems and stop online threats. We are excited to have you join us for an empowering multi-day experience of innovation, hands-on learning, and competition.
     </div>
 
     <!-- Participant Details -->
@@ -157,15 +156,13 @@ function buildEmailHtml(student: Student, safeId: string, downloadUrl: string): 
         <span class="detail-value">${student.department}</span>
       </div>
       <div class="detail-row">
-        <span class="detail-label">Workshop Duration</span>
-        <span class="detail-value">4 Days</span>
+        <span class="detail-label">Event Duration</span>
+        <span class="detail-value">August 11 – 14, 2026</span>
       </div>
       <div class="dates-box">
-        <div class="dates-title">Workshop Dates</div>
-        <div class="date-item"><span class="date-dot"></span>11 August 2026 — Day 1</div>
-        <div class="date-item"><span class="date-dot"></span>12 August 2026 — Day 2</div>
-        <div class="date-item"><span class="date-dot"></span>13 August 2026 — Day 3</div>
-        <div class="date-item"><span class="date-dot"></span>14 August 2026 — Day 4</div>
+        <div class="dates-title">Event Schedule</div>
+        <div class="date-item"><span class="date-dot"></span><strong>August 11 – 13, 2026:</strong> Hands-on Workshop</div>
+        <div class="date-item"><span class="date-dot"></span><strong>August 14, 2026:</strong> Cybersecurity Hackathon</div>
       </div>
     </div>
 
@@ -224,14 +221,6 @@ function buildEmailHtml(student: Student, safeId: string, downloadUrl: string): 
   <!-- FOOTER -->
   <div class="footer">
     <div class="footer-name">Team The Shield Protocol</div>
-    <div class="footer-role">Cybersecurity Summit &amp; Hackathon 2026</div>
-    <div class="footer-divider"></div>
-    <div class="footer-links">
-      <a href="#" class="footer-link">Website</a>
-      <a href="#" class="footer-link">Instagram</a>
-      <a href="#" class="footer-link">LinkedIn</a>
-      <a href="#" class="footer-link">Contact</a>
-    </div>
     <div class="footer-disclaimer">
       This is an automated email. Please do not reply directly to this message.<br/>
       © 2026 The Shield Protocol. All rights reserved.
@@ -263,17 +252,16 @@ export async function sendStudentEmail(
   const baseUrl = process.env.PUBLIC_URL || process.env.BACKEND_URL || 'http://localhost:5000';
   const downloadUrl = `${baseUrl}/api/public/download-qr/${encodeURIComponent(student.studentId)}`;
 
-  const from = `"${process.env.EMAIL_FROM_NAME || 'The Shield Protocol Team'}" <${
-    process.env.EMAIL_FROM_ADDRESS ||
+  const from = `"${process.env.EMAIL_FROM_NAME || 'The Shield Protocol Team'}" <${process.env.EMAIL_FROM_ADDRESS ||
     process.env.GMAIL_USER ||
     process.env.SMTP_USER ||
     'noreply@shieldprotocol.com'
-  }>`;
+    }>`;
 
   const mailOptions = {
     from,
     to: student.email,
-    subject: 'Welcome to The Shield Protocol 2026 – Your Event Pass & QR Code',
+    subject: 'Get ready! Your Shield Protocol workshop is just a few days away 🛡️',
     html: buildEmailHtml(student, safeFilename, downloadUrl),
     attachments: [
       {
