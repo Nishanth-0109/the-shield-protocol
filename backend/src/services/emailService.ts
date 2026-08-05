@@ -254,7 +254,18 @@ export async function sendStudentEmail(
   }
 
   const safeFilename = getSafeFilename(student.studentId);
-  const baseUrl = process.env.PUBLIC_URL || process.env.BACKEND_URL || 'http://localhost:5000';
+  let baseUrl = process.env.PUBLIC_URL || process.env.BACKEND_URL;
+  if (!baseUrl) {
+    if (process.env.VERCEL_URL) {
+      baseUrl = process.env.VERCEL_URL.startsWith('http')
+        ? process.env.VERCEL_URL
+        : `https://${process.env.VERCEL_URL}`;
+    } else if (process.env.VERCEL) {
+      baseUrl = 'https://the-shield-protocol.vercel.app';
+    } else {
+      baseUrl = 'http://localhost:5000';
+    }
+  }
   const downloadUrl = `${baseUrl}/api/public/download-qr/${encodeURIComponent(student.studentId)}`;
 
   const from = `"${process.env.EMAIL_FROM_NAME || 'The Shield Protocol Team'}" <${process.env.EMAIL_FROM_ADDRESS ||
