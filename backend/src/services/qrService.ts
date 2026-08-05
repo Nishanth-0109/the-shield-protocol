@@ -8,9 +8,10 @@ import { getSupabaseClient, isSupabaseEnabled } from '../config/supabaseClient';
 const QR_SIZE = 500;          // px — base QR canvas
 const LOGO_RATIO = 0.18;      // logo occupies ~18% of QR width
 const LOGO_SIZE = Math.round(QR_SIZE * LOGO_RATIO);
+const isVercel = !!process.env.VERCEL;
 const QR_OUTPUT_DIR = process.env.QR_OUTPUT_DIR
   ? path.resolve(process.env.QR_OUTPUT_DIR)
-  : path.join(process.cwd(), 'generated-qr');
+  : isVercel ? '/tmp/generated-qr' : path.join(process.cwd(), 'generated-qr');
 
 // Helper to sanitize studentId for safe Windows/Linux file naming
 export function getSafeFilename(studentId: string): string {
@@ -20,8 +21,12 @@ export function getSafeFilename(studentId: string): string {
 
 // Ensure output directory exists
 export function ensureQrDir(): void {
-  if (!fs.existsSync(QR_OUTPUT_DIR)) {
-    fs.mkdirSync(QR_OUTPUT_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(QR_OUTPUT_DIR)) {
+      fs.mkdirSync(QR_OUTPUT_DIR, { recursive: true });
+    }
+  } catch (err) {
+    logger.error('[QR] Output directory setup warning:', err);
   }
 }
 

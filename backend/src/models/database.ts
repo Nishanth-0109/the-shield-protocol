@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import bcrypt from 'bcryptjs';
 import { Student, UploadBatch, ProcessingJob, ActivityEvent, AdminUser } from '../types';
 import { getSupabaseClient, isSupabaseEnabled } from '../config/supabaseClient';
 import { logger } from '../utils/logger';
@@ -16,30 +17,41 @@ interface DbSchema {
   activity: ActivityEvent[];
 }
 
-const DB_PATH = path.join(process.cwd(), 'data', 'db.json');
+const isVercel = !!process.env.VERCEL;
+const DB_PATH = isVercel
+  ? path.join('/tmp', 'db.json')
+  : path.join(process.cwd(), 'data', 'db.json');
 
 let dbCache: DbSchema | null = null;
 let saveTimeout: NodeJS.Timeout | null = null;
 
 function ensureDbFile(): void {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(DB_PATH)) {
-    const initial: DbSchema = {
-      admin: null,
-      students: [],
-      batches: [],
-      jobs: [],
-      activity: [],
-    };
-    fs.writeFileSync(DB_PATH, JSON.stringify(initial, null, 2));
+  try {
+    const dir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(DB_PATH)) {
+      const initial: DbSchema = {
+        admin: null,
+        students: [],
+        batches: [],
+        jobs: [],
+        activity: [],
+      };
+      fs.writeFileSync(DB_PATH, JSON.stringify(initial, null, 2));
+    }
+  } catch (err) {
+    logger.error('[DB] File setup warning:', err);
   }
 }
 
 export function flushDbSync(): void {
   if (!dbCache) return;
-  ensureDbFile();
-  fs.writeFileSync(DB_PATH, JSON.stringify(dbCache, null, 2));
+  try {
+    ensureDbFile();
+    fs.writeFileSync(DB_PATH, JSON.stringify(dbCache, null, 2));
+  } catch (err) {
+    logger.error('[DB] Flush sync warning:', err);
+  }
 }
 
 function readDb(): DbSchema {
@@ -76,8 +88,29 @@ function safeSupa(promise: PromiseLike<unknown>): void {
 // Admin
 // =============================================
 
-export const dbGetAdmin = (): AdminUser | null => {
-  return readDb().admin;
+export const dbGetAdmin = (): AdminUser => {
+  const db = readDb();
+  if (db.admin) return db.admin;
+
+  const email = process.env.ADMIN_EMAIL || 'admin@shieldprotocol.com';
+  const password = process.env.ADMIN_PASSWORD || 'ShieldAdmin@2026';
+  const passwordHash = bcrypt.hashSync(password, 10);
+
+  const defaultAdmin: AdminUser = {
+    id: 'admin-default-001',
+    email,
+    passwordHash,
+    name: 'Shield Admin',
+  };
+
+  db.admin = defaultAdmin;
+  try {
+    writeDb(db);
+  } catch {
+    // Ignore in read-only environment
+  }
+
+  return defaultAdmin;
 };
 
 export const dbSetAdmin = (admin: AdminUser): void => {
