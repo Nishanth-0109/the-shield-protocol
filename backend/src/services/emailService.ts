@@ -1,8 +1,10 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import fs from 'fs';
+import path from 'path';
 import { Student } from '../types';
 import { logger } from '../utils/logger';
 import { generateAndSaveQr, getSafeFilename } from './qrService';
+import { ensurePlaceholderLogo } from '../utils/placeholder-logo';
 
 // =============================================
 // Transporter factory — supports multiple providers
@@ -127,7 +129,10 @@ function buildEmailHtml(student: Student, safeId: string, downloadUrl: string): 
 
   <!-- HEADER -->
   <div class="header">
-    <div class="header-logo">⬡ The Shield Protocol</div>
+    <div style="margin-bottom: 14px; text-align: center;">
+      <img src="cid:shieldlogo" alt="The Shield Protocol Logo" width="80" height="80" style="width: 80px; height: 80px; display: inline-block; vertical-align: middle; border: 0; outline: none; border-radius: 16px; filter: drop-shadow(0 4px 16px rgba(59, 130, 246, 0.5));" />
+    </div>
+    <div class="header-logo">The Shield Protocol</div>
     <div class="badge">Welcome to Shield Protocol</div>
   </div>
 
@@ -258,20 +263,38 @@ export async function sendStudentEmail(
     'noreply@shieldprotocol.com'
     }>`;
 
+  // Guarantee logo PNG exists
+  const logoPath = path.join(process.cwd(), 'assets', 'shield-logo.png');
+  if (!fs.existsSync(logoPath)) {
+    await ensurePlaceholderLogo();
+  }
+
+  const attachments: any[] = [
+    {
+      filename: safeFilename,
+      path: targetQrPath,
+      cid: 'qrcode', // Embedded inline CID for rendering inside HTML body
+      contentType: 'image/png',
+      contentDisposition: 'inline' as const,
+    },
+  ];
+
+  if (fs.existsSync(logoPath)) {
+    attachments.push({
+      filename: 'shield-logo.png',
+      path: logoPath,
+      cid: 'shieldlogo', // Embedded inline CID for shield logo
+      contentType: 'image/png',
+      contentDisposition: 'inline' as const,
+    });
+  }
+
   const mailOptions = {
     from,
     to: student.email,
     subject: 'Get ready! Your Shield Protocol workshop is just a few days away 🛡️',
     html: buildEmailHtml(student, safeFilename, downloadUrl),
-    attachments: [
-      {
-        filename: safeFilename,
-        path: targetQrPath,
-        cid: 'qrcode', // Embedded inline CID for rendering inside HTML body
-        contentType: 'image/png',
-        contentDisposition: 'inline' as const,
-      },
-    ],
+    attachments,
   };
 
   await transporter.sendMail(mailOptions);
