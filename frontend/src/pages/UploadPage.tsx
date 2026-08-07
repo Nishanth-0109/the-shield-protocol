@@ -103,10 +103,20 @@ export default function UploadPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected: (fileRejections) => {
+      const err = fileRejections[0]?.errors[0]?.message || 'File not accepted. Please upload a CSV, XLS, or XLSX file.';
+      toast.error(err);
+    },
     accept: {
       'text/csv': ['.csv'],
-      'application/vnd.ms-excel': ['.xls'],
+      'text/plain': ['.csv'],
+      'application/csv': ['.csv'],
+      'text/x-csv': ['.csv'],
+      'application/x-csv': ['.csv'],
+      'text/comma-separated-values': ['.csv'],
+      'application/vnd.ms-excel': ['.xls', '.csv'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/octet-stream': ['.csv', '.xls', '.xlsx'],
     },
     maxFiles: 1,
     maxSize: 10 * 1024 * 1024,
