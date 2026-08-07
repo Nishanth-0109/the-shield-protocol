@@ -28,10 +28,17 @@ export const uploadApi = {
     });
   },
 
-  confirm: (filePath: string, fileName: string) =>
+  confirm: (
+    filePath: string,
+    fileName: string,
+    validRecords?: any[],
+    totalRows?: number,
+    invalidCount?: number,
+    duplicateCount?: number
+  ) =>
     apiClient.post<ApiResponse<{ batchId: string; imported: number; batch: UploadBatch }>>(
       '/upload/confirm',
-      { filePath, fileName }
+      { filePath, fileName, validRecords, totalRows, invalidCount, duplicateCount }
     ),
 };
 

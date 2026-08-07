@@ -10,25 +10,8 @@ import { ApiResponse, UploadBatch } from '../types';
 
 const router = Router();
 
-// Configure multer — only allow CSV/XLS/XLSX
-const isVercel = !!process.env.VERCEL;
-const UPLOAD_DIR = isVercel
-  ? path.join('/tmp', 'uploads')
-  : path.join(process.cwd(), process.env.UPLOAD_DIR || 'uploads');
-
-try {
-  if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-} catch {
-  // ignore in read-only environment
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-  filename: (_req, file, cb) => {
-    const unique = `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, unique);
-  },
-});
+// Configure multer with memory storage (works seamlessly on Vercel & serverless)
+const storage = multer.memoryStorage();
 
 const fileFilter = (
   _req: Request,
@@ -64,19 +47,19 @@ router.post(
     });
   },
   async (req: Request, res: Response): Promise<void> => {
-    if (!req.file) {
-      res.status(400).json({ success: false, message: 'No file uploaded' });
+    if (!req.file || !req.file.buffer) {
+      res.status(400).json({ success: false, message: 'No file uploaded or file buffer empty' });
       return;
     }
 
     try {
-      const { rows, headers } = parseUploadedFile(req.file.path);
+      const { rows, headers } = parseUploadedBuffer(req.file.buffer, req.file.originalname);
       const validation = validateAndMapRows(rows, headers);
 
       const response: ApiResponse = {
         success: true,
         data: {
-          filePath: req.file.path,
+          filePath: 'memory://' + req.file.originalname,
           fileName: req.file.originalname,
           headers,
           valid: validation.valid,
@@ -87,10 +70,8 @@ router.post(
       };
 
       res.json(response);
-    } catch (err) {
-      // Cleanup uploaded file on parse error
-      fs.unlinkSync(req.file.path);
-      throw err;
+    } catch (err: any) {
+      res.status(400).json({ success: false, message: err?.message || 'Failed to parse file' });
     }
   }
 );
@@ -100,37 +81,56 @@ router.post(
   '/confirm',
   authenticateToken,
   async (req: Request, res: Response): Promise<void> => {
-    const { filePath, fileName } = req.body as { filePath?: string; fileName?: string };
+    const { filePath, fileName, validRecords, totalRows, invalidCount, duplicateCount } = req.body as {
+      filePath?: string;
+      fileName?: string;
+      validRecords?: any[];
+      totalRows?: number;
+      invalidCount?: number;
+      duplicateCount?: number;
+    };
 
-    if (!filePath || !fs.existsSync(filePath)) {
-      res.status(400).json({ success: false, message: 'Invalid or missing file path' });
+    let validList: any[] = [];
+    let rowsLength = totalRows || 0;
+    let invCount = invalidCount || 0;
+    let dupCount = duplicateCount || 0;
+
+    if (Array.isArray(validRecords) && validRecords.length > 0) {
+      validList = validRecords;
+    } else if (filePath && !filePath.startsWith('memory://') && fs.existsSync(filePath)) {
+      const { rows, headers } = parseUploadedFile(filePath);
+      const validation = validateAndMapRows(rows, headers);
+      validList = validation.valid;
+      rowsLength = rows.length;
+      invCount = validation.invalid.length;
+      dupCount = validation.duplicates.length;
+    } else {
+      res.status(400).json({ success: false, message: 'No valid records to import. Please upload the file again.' });
       return;
     }
 
-    const { rows, headers } = parseUploadedFile(filePath);
-    const validation = validateAndMapRows(rows, headers);
-
-    if (validation.valid.length === 0) {
+    if (validList.length === 0) {
       res.status(400).json({ success: false, message: 'No valid records to import' });
       return;
     }
 
     const batchId = uuidv4();
+    const batchName = fileName || 'Imported_List.csv';
 
     const batch: UploadBatch = {
       id: batchId,
-      fileName: fileName || path.basename(filePath),
-      totalRecords: rows.length,
-      validRecords: validation.valid.length,
-      duplicateRecords: validation.duplicates.length,
-      invalidRecords: validation.invalid.length,
+      fileName: batchName,
+      totalRecords: rowsLength || validList.length,
+      validRecords: validList.length,
+      duplicateRecords: dupCount,
+      invalidRecords: invCount,
       uploadedAt: new Date().toISOString(),
       status: 'uploaded',
     };
 
     dbInsertBatch(batch);
 
-    const students = mapToStudents(validation.valid, batchId);
+    const students = mapToStudents(validList, batchId);
     dbInsertStudents(students);
 
     dbInsertActivity({

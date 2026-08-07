@@ -42,8 +42,37 @@ function isValidStudentId(id: string): boolean {
   return /^[A-Za-z0-9_\/\s-]{1,50}$/.test(id.trim());
 }
 
+export function parseUploadedBuffer(buffer: Buffer, filename: string): { rows: string[][]; headers: string[] } {
+  const ext = path.extname(filename).toLowerCase();
+
+  if (ext === '.csv' || !ext) {
+    try {
+      const content = buffer.toString('utf-8');
+      const cleanContent = content.replace(/^\uFEFF/, ''); // Strip BOM marker
+      const lines = cleanContent.split(/\r?\n/).filter(l => l.trim().length > 0);
+      if (lines.length > 0) {
+        // Auto-detect delimiter (comma or semicolon)
+        const delimiter = lines[0].includes(';') ? ';' : ',';
+        const rows = lines.map(l => l.split(delimiter).map(c => c.trim().replace(/^"|"$/g, '')));
+        const headers = rows[0] || [];
+        return { rows: rows.slice(1), headers };
+      }
+    } catch {
+      // Fallback to XLSX parser below
+    }
+  }
+
+  // XLSX / XLS / CSV fallback from buffer
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' });
+  const headers = (data[0] as string[]).map(String);
+  const rows = data.slice(1).map(r => (r as unknown[]).map(String));
+  return { rows, headers };
+}
+
 // =============================================
-// Parse uploaded file (CSV/XLSX/XLS)
+// Parse uploaded file path (CSV/XLSX/XLS)
 // =============================================
 export function parseUploadedFile(filePath: string): { rows: string[][]; headers: string[] } {
   const ext = path.extname(filePath).toLowerCase();

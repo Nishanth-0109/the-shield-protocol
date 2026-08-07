@@ -117,12 +117,17 @@ export default function UploadPage() {
     if (!preview) return;
     setConfirming(true);
     try {
-      const res = await uploadApi.confirm(preview.filePath, preview.fileName);
-      if (res.data.success && res.data.data) {
-        toast.success(`Imported ${res.data.data.imported} students successfully!`);
-        navigate('/processing', {
-          state: { batchId: res.data.data.batchId, batchName: preview.fileName },
-        });
+      const res = await uploadApi.confirm(
+        preview.filePath,
+        preview.fileName,
+        preview.valid,
+        preview.totalRows,
+        preview.invalid?.length || 0,
+        preview.duplicates?.length || 0
+      );
+      if (res.data.success) {
+        toast.success(res.data.message || 'Import successful!');
+        navigate('/processing');
       }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Import failed';
