@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
+import { Buffer } from 'buffer';
 import { v4 as uuidv4 } from 'uuid';
 import { ParsedStudentRow, ValidationResult, Student } from '../types';
 import { dbGetStudentByStudentId } from '../models/database';

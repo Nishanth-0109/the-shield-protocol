@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticateToken } from '../middleware/auth';
-import { parseUploadedFile, validateAndMapRows, mapToStudents } from '../services/csvService';
+import { parseUploadedFile, parseUploadedBuffer, validateAndMapRows, mapToStudents } from '../services/csvService';
 import { dbInsertBatch, dbInsertStudents, dbInsertActivity } from '../models/database';
 import { ApiResponse, UploadBatch } from '../types';
 
