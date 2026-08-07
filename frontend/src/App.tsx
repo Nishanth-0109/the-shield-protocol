@@ -13,11 +13,9 @@ import ReportsPage from './pages/ReportsPage';
 import Layout from './components/Layout';
 
 // =============================================
-// Auth Guard
+// Auth Guard — Allows direct access without mandatory login
 // =============================================
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const token = localStorage.getItem('sp_token');
-  if (!token) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
@@ -25,7 +23,7 @@ export default function App() {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
-  // Rehydrate from localStorage
+  // Rehydrate or set default session
   useEffect(() => {
     const storedToken = localStorage.getItem('sp_token');
     const storedUser = localStorage.getItem('sp_admin');
@@ -37,6 +35,18 @@ export default function App() {
         localStorage.removeItem('sp_token');
         localStorage.removeItem('sp_admin');
       }
+    } else {
+      // Default session so visitors don't hit a login wall
+      const defaultToken = 'guest_admin_token';
+      const defaultUser: AdminUser = {
+        id: 'admin-default-001',
+        email: 'admin@shieldprotocol.com',
+        name: 'Shield Admin',
+      };
+      localStorage.setItem('sp_token', defaultToken);
+      localStorage.setItem('sp_admin', JSON.stringify(defaultUser));
+      setToken(defaultToken);
+      setUser(defaultUser);
     }
   }, []);
 

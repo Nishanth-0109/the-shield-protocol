@@ -15,14 +15,12 @@ apiClient.interceptors.request.use(config => {
   return config;
 });
 
-// Auto-redirect on 401 or 403
+// Handle 401 or 403 gracefully without forcing redirect to login page
 apiClient.interceptors.response.use(
   res => res,
   err => {
     if (err.response?.status === 401 || err.response?.status === 403) {
-      localStorage.removeItem('sp_token');
-      localStorage.removeItem('sp_admin');
-      window.location.href = '/login';
+      console.warn('API authentication warning:', err.response?.data?.message);
     }
     return Promise.reject(err);
   }
