@@ -93,9 +93,11 @@ export default function UploadPage() {
         setPreview(res.data.data);
         toast.success(`File parsed: ${res.data.data.valid.length} valid records found`);
       }
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Upload failed';
-      toast.error(msg);
+    } catch (err: any) {
+      console.error('Upload request failed:', err);
+      const serverMsg = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Upload failed';
+      const details = err?.response?.data?.details;
+      toast.error(details ? `${serverMsg} (${details})` : serverMsg);
     } finally {
       setUploading(false);
     }

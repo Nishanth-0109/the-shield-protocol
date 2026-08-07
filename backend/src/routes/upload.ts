@@ -41,20 +41,37 @@ router.post(
   (req: Request, res: Response, next) => {
     upload.single('file')(req, res, (err) => {
       if (err) {
-        return res.status(400).json({ success: false, message: err.message || 'File upload failed' });
+        console.error('[Upload Middleware Error]:', err);
+        return res.status(400).json({
+          success: false,
+          message: err.message || 'File upload failed',
+          details: 'Multipart file parsing error.'
+        });
       }
       next();
     });
   },
   async (req: Request, res: Response): Promise<void> => {
     if (!req.file || !req.file.buffer) {
-      res.status(400).json({ success: false, message: 'No file uploaded or file buffer empty' });
+      res.status(400).json({ success: false, message: 'No file received', details: 'Uploaded file payload or buffer was empty.' });
       return;
     }
 
     try {
+      console.log(`[Upload API] Received file: "${req.file.originalname}" (${req.file.size} bytes, MIME: ${req.file.mimetype})`);
       const { rows, headers } = parseUploadedBuffer(req.file.buffer, req.file.originalname);
+      
+      if (!rows || rows.length === 0) {
+        res.status(400).json({
+          success: false,
+          message: 'File is empty',
+          details: 'No data rows found in the uploaded file.'
+        });
+        return;
+      }
+
       const validation = validateAndMapRows(rows, headers);
+      console.log(`[Upload API] Validation result: Total: ${rows.length}, Valid: ${validation.valid.length}, Invalid: ${validation.invalid.length}, Duplicates: ${validation.duplicates.length}`);
 
       const response: ApiResponse = {
         success: true,
@@ -71,7 +88,12 @@ router.post(
 
       res.json(response);
     } catch (err: any) {
-      res.status(400).json({ success: false, message: err?.message || 'Failed to parse file' });
+      console.error('[Upload API Exception]:', err);
+      res.status(400).json({
+        success: false,
+        message: err?.message || 'Failed to process file format',
+        details: 'The uploaded file content or structure could not be parsed.'
+      });
     }
   }
 );
