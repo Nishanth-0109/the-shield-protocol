@@ -10,17 +10,17 @@ import { dbGetStudentByStudentId } from '../models/database';
 // Column name aliases (case-insensitive mapping)
 // =============================================
 const COLUMN_ALIASES: Record<string, string[]> = {
-  studentId: ['student id', 'studentid', 'registration id', 'reg id', 'id', 'sp id', 'roll no', 'rollno', 'student_id', 'reg_no', 'registration_number', 'regno'],
-  name: ['student name', 'name', 'full name', 'fullname', 'student_name', 'first name', 'student'],
-  email: ['email', 'email address', 'e-mail', 'mail', 'email_address', 'student email', 'student_email'],
-  mobile: ['mobile', 'phone', 'mobile no', 'phone number', 'contact', 'mobile_no', 'phone_no', 'mobile number', 'contact_no'],
-  department: ['dept', 'department', 'branch', 'dept/branch', 'dept / branch', 'stream', 'course', 'sec', 'section'],
+  studentId: ['student id', 'studentid', 'registration id', 'reg id', 'id', 'sp id', 'roll no', 'rollno', 'student_id', 'reg_no', 'registration_number', 'regno', 'sno', 's.no', 'slno', 'sl.no', 'sn', 'srno', 'sr.no', 'registration no', 'reg.no', 'id_number', 'id number'],
+  name: ['student name', 'name', 'full name', 'fullname', 'student_name', 'first name', 'student', 'name of the student', 'candidate name', 'participant name'],
+  email: ['email', 'email address', 'e-mail', 'mail', 'email_address', 'student email', 'student_email', 'mail id', 'mailid', 'email id', 'emailid'],
+  mobile: ['mobile', 'phone', 'mobile no', 'phone number', 'contact', 'mobile_no', 'phone_no', 'mobile number', 'contact_no', 'whatsapp', 'phone_number', 'contact number'],
+  department: ['dept', 'department', 'branch', 'dept/branch', 'dept / branch', 'stream', 'course', 'sec', 'section', 'class', 'year'],
 };
 
 function findColumn(headers: string[], field: string): number {
   const aliases = COLUMN_ALIASES[field] || [field];
   for (let i = 0; i < headers.length; i++) {
-    const h = headers[i].toLowerCase().trim();
+    const h = String(headers[i] || '').toLowerCase().trim();
     if (aliases.some(a => a === h)) return i;
   }
   return -1;
@@ -39,37 +39,36 @@ function isValidMobile(mobile: string): boolean {
 
 function isValidStudentId(id: string): boolean {
   if (!id || !id.trim()) return false;
-  // Accept any non-empty alphanumeric student ID (allowing hyphens, underscores, slashes, spaces) between 1 and 50 chars
-  return /^[A-Za-z0-9_\/\s-]{1,50}$/.test(id.trim());
+  return id.trim().length >= 1 && id.trim().length <= 100;
 }
 
 export function parseUploadedBuffer(buffer: Buffer, filename: string): { rows: string[][]; headers: string[] } {
-  const ext = path.extname(filename).toLowerCase();
-
-  if (ext === '.csv' || !ext) {
-    try {
-      const content = buffer.toString('utf-8');
-      const cleanContent = content.replace(/^\uFEFF/, ''); // Strip BOM marker
-      const lines = cleanContent.split(/\r?\n/).filter(l => l.trim().length > 0);
-      if (lines.length > 0) {
-        // Auto-detect delimiter (comma or semicolon)
-        const delimiter = lines[0].includes(';') ? ';' : ',';
-        const rows = lines.map(l => l.split(delimiter).map(c => c.trim().replace(/^"|"$/g, '')));
-        const headers = rows[0] || [];
-        return { rows: rows.slice(1), headers };
+  try {
+    const workbook = XLSX.read(buffer, { type: 'buffer', raw: false });
+    const firstSheetName = workbook.SheetNames[0];
+    if (firstSheetName && workbook.Sheets[firstSheetName]) {
+      const sheet = workbook.Sheets[firstSheetName];
+      const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' });
+      if (data && data.length > 0) {
+        const headers = (data[0] as unknown[]).map(h => String(h || '').trim());
+        const rows = data.slice(1).map(r => (r as unknown[]).map(c => String(c || '').trim()));
+        return { rows, headers };
       }
-    } catch {
-      // Fallback to XLSX parser below
     }
+  } catch {
+    // Fallback to text parsing if XLSX parser encounters unexpected structure
   }
 
-  // XLSX / XLS / CSV fallback from buffer
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' });
-  const headers = (data[0] as string[]).map(String);
-  const rows = data.slice(1).map(r => (r as unknown[]).map(String));
-  return { rows, headers };
+  const content = buffer.toString('utf-8').replace(/^\uFEFF/, '');
+  const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (lines.length > 0) {
+    const delimiter = lines[0].includes(';') ? ';' : lines[0].includes('\t') ? '\t' : ',';
+    const rows = lines.map(l => l.split(delimiter).map(c => c.trim().replace(/^"|"$/g, '')));
+    const headers = rows[0] || [];
+    return { rows: rows.slice(1), headers };
+  }
+
+  return { rows: [], headers: [] };
 }
 
 // =============================================
