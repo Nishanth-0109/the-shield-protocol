@@ -13,24 +13,9 @@ const router = Router();
 // Configure multer with memory storage (works seamlessly on Vercel & serverless)
 const storage = multer.memoryStorage();
 
-const fileFilter = (
-  _req: Request,
-  file: Express.Multer.File,
-  cb: multer.FileFilterCallback
-) => {
-  const allowed = ['.csv', '.xlsx', '.xls'];
-  const ext = path.extname(file.originalname).toLowerCase();
-  const mimetype = (file.mimetype || '').toLowerCase();
-  if (allowed.includes(ext) || mimetype.includes('csv') || mimetype.includes('spreadsheet') || mimetype.includes('excel')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only CSV, XLSX, and XLS files are allowed'));
-  }
-};
-
+// Configure Multer with memoryStorage to accept all file formats
 const upload = multer({
   storage,
-  fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
 });
 
