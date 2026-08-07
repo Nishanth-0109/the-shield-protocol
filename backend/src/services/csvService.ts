@@ -48,15 +48,24 @@ function isValidStudentId(id: string): boolean {
 export function parseUploadedFile(filePath: string): { rows: string[][]; headers: string[] } {
   const ext = path.extname(filePath).toLowerCase();
 
-  if (ext === '.csv') {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
-    const rows = lines.map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
-    const headers = rows[0] || [];
-    return { rows: rows.slice(1), headers };
+  if (ext === '.csv' || !ext) {
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const cleanContent = content.replace(/^\uFEFF/, ''); // Strip BOM marker
+      const lines = cleanContent.split(/\r?\n/).filter(l => l.trim().length > 0);
+      if (lines.length > 0) {
+        // Auto-detect delimiter (comma or semicolon)
+        const delimiter = lines[0].includes(';') ? ';' : ',';
+        const rows = lines.map(l => l.split(delimiter).map(c => c.trim().replace(/^"|"$/g, '')));
+        const headers = rows[0] || [];
+        return { rows: rows.slice(1), headers };
+      }
+    } catch {
+      // Fallback to XLSX parser if plain text read fails
+    }
   }
 
-  // XLSX / XLS
+  // XLSX / XLS / CSV fallback
   const workbook = XLSX.readFile(filePath);
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' });

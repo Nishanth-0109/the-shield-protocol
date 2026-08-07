@@ -11,8 +11,16 @@ import { ApiResponse, UploadBatch } from '../types';
 const router = Router();
 
 // Configure multer — only allow CSV/XLS/XLSX
-const UPLOAD_DIR = path.join(process.cwd(), process.env.UPLOAD_DIR || 'uploads');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+const isVercel = !!process.env.VERCEL;
+const UPLOAD_DIR = isVercel
+  ? path.join('/tmp', 'uploads')
+  : path.join(process.cwd(), process.env.UPLOAD_DIR || 'uploads');
+
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+} catch {
+  // ignore in read-only environment
+}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
@@ -29,7 +37,8 @@ const fileFilter = (
 ) => {
   const allowed = ['.csv', '.xlsx', '.xls'];
   const ext = path.extname(file.originalname).toLowerCase();
-  if (allowed.includes(ext)) {
+  const mimetype = (file.mimetype || '').toLowerCase();
+  if (allowed.includes(ext) || mimetype.includes('csv') || mimetype.includes('spreadsheet') || mimetype.includes('excel')) {
     cb(null, true);
   } else {
     cb(new Error('Only CSV, XLSX, and XLS files are allowed'));
@@ -46,7 +55,14 @@ const upload = multer({
 router.post(
   '/',
   authenticateToken,
-  upload.single('file'),
+  (req: Request, res: Response, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({ success: false, message: err.message || 'File upload failed' });
+      }
+      next();
+    });
+  },
   async (req: Request, res: Response): Promise<void> => {
     if (!req.file) {
       res.status(400).json({ success: false, message: 'No file uploaded' });
